@@ -19,16 +19,39 @@ buddy_df <- buddy_form |>
          about = starts_with("About"),
          interests = contains("interest"))
 
-# create a tibble called extra_buddy with first_name = rainbow, last_name = R, email = rlgbtq@gmail.com, about = rainbow, interests = unicorns
-extra_buddy <- tibble(first_name = "rainbow",
-                last_name = "R",
-                email = "rlgbtq@gmail.com",
-                about = "rainbow",
-                interests = "unicorns")
+# message is buddy_df has an odd or even number of rows
+if (nrow(buddy_df) %% 2 == 1) {
+  message("buddy_df has an odd number of rows")
+} else {
+  message("buddy_df has an even number of rows")
+}
 
-# As an alternative to extra_buddy, consider stopping the script if odd number
-# and prompting myself to fill in the form, then running the script again
+Ella_Kaye_row <- buddy_df |> 
+  filter(first_name == "Ella" & last_name == "Kaye") |> 
+  nrow()
 
+# Check Ella Kaye is in buddy_df
+if (!Ella_Kaye_row) {
+  message("Ella Kaye is not in buddy_df")
+}
+
+# If buddy_df has an odd number of rows and Ella Kaye is in buddy_df, stop
+if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
+  stop("Either filter out Ella Kaye or add a second Ella Kaye entry from a different email.")
+}
+
+# If filtering Ella Kaye out, uncomment the code below
+# If buddy_df has an odd number of rows and Ella Kaye is in buddy_df, 
+# filter out my own row (Ella Kaye)
+# if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
+#  buddy_df <- buddy_df |>
+#    filter(!(first_name == "Ella" & last_name == "Kaye"))
+# }
+
+# If buddy_df has an odd number of rows and Ella Kaye is not in buddy_df, stop
+if ((nrow(buddy_df) %% 2 == 1) && !Ella_Kaye_row) {
+  stop("Either add Ella Kaye or remove a row.")
+}
 
 # match buddies -----------------------------------------------------------
 
@@ -69,11 +92,15 @@ make_buddy_pairs <- function(buddy_df, seed = 1) {
 }
 
 # a function make_buddies that takes buddy_df, extra_buddy with default extra_buddy and seed = 1 as arguments
-make_buddies <- function(buddy_df, extra_buddy = extra_buddy, seed = 1) {
+# avoid is a tibble of email pairs to avoid
+# it can be used to avoid pairing two entries for the same person (esp. Ella Kaye)
+# it can also be used if participants have specifically requested to avoid a pairing
+make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
   
-  # if buddy_df has an odd number of rows, add extra_buddy to buddy_df
+  # if buddy_df has an odd number of rows,
+  # N.B. this shouldn't happen, if the script above has run properly
   if(nrow(buddy_df) %% 2 == 1) {
-    buddy_df <- bind_rows(buddy_df, extra_buddy)
+    stop("buddy_df must have an even number of rows")
   }
   
   # call make_buddy_pairs with buddy_df and seed
@@ -83,26 +110,35 @@ make_buddies <- function(buddy_df, extra_buddy = extra_buddy, seed = 1) {
   buddy_df <- buddies$buddy_df
   
   # if previous_buddy_pairs.csv exists, read it into previous_buddy_pairs
+  # if not, create previous_buddy_pairs as an empty tibble with col_names first_buddy and second_buddy
   if(file.exists("previous_buddy_pairs.csv")) {
     previous_buddy_pairs <- read_csv("previous_buddy_pairs.csv")
-    
-    # while any of the rows in buddy_pairs are in previous_buddy_pairs
-    # increment seed by 1 and run make_buddy_pairs again, updating buddy_pairs and buddy_df
-    while(any(apply(buddy_pairs, 1, function(x) paste(x, collapse = " ")) %in% apply(previous_buddy_pairs, 1, function(x) paste(x, collapse = " ")))) {
-      seed <- seed + 1
-      updated_buddies <- make_buddy_pairs(buddy_df, seed)
-      buddy_pairs <- updated_buddies$buddy_pairs
-      buddy_df <- updated_buddies$buddy_df
-    }
-    
-    # created updated_buddy_pairs by binding previous_buddy_pairs and buddy_pairs
-    updated_buddy_pairs <- bind_rows(previous_buddy_pairs, buddy_pairs)
-    # write updated_buddy_pairs to previous_buddy_pairs.csv
-    write_csv(updated_buddy_pairs, "previous_buddy_pairs.csv")
   } else {
-    # if previous_buddy_pairs.csv does not exist, write buddy_pairs to previous_buddy_pairs.csv
-    write_csv(buddy_pairs, "previous_buddy_pairs.csv")
+    previous_buddy_pairs <- tibble(first_buddy = character(),
+                                   second_buddy = character())
   }
+  
+  # if !is.null(avoid), add avoid to previous_buddy_pairs
+  if(!is.null(avoid)) {
+    avoid_pairs <- previous_buddy_pairs |>
+      bind_rows(avoid)
+  } else {
+    avoid_pairs <- previous_buddy_pairs
+  }
+  
+  # while any of the rows in buddy_pairs are in avoid_pairs
+  # increment seed by 1 and run make_buddy_pairs again, updating buddy_pairs and buddy_df
+  while(any(apply(buddy_pairs, 1, function(x) paste(x, collapse = " ")) %in% apply(avoid_pairs, 1, function(x) paste(x, collapse = " ")))) {
+    seed <- seed + 1
+    updated_buddies <- make_buddy_pairs(buddy_df, seed)
+    buddy_pairs <- updated_buddies$buddy_pairs
+    buddy_df <- updated_buddies$buddy_df
+  }
+    
+  # created updated_buddy_pairs by binding previous_buddy_pairs and buddy_pairs
+  updated_buddy_pairs <- bind_rows(previous_buddy_pairs, buddy_pairs)
+  # write updated_buddy_pairs to previous_buddy_pairs.csv
+  write_csv(updated_buddy_pairs, "previous_buddy_pairs.csv")
   
   # write buddy_pairs to YYYY-MM_buddy_pairs.csv
   # where YYYY is the current year and MM is the current month
@@ -118,8 +154,13 @@ make_buddies <- function(buddy_df, extra_buddy = extra_buddy, seed = 1) {
               final_seed = seed))
 }
 
-buddies <- make_buddies(buddy_df, extra_buddy, 1)$buddy_df
+# read in avoid.csv (N.B. in .gitignore)
+avoid <- read_csv("avoid.csv")
 
+buddies <- make_buddies(buddy_df, avoid = avoid, seed = 1)
+buddy_df <- buddies$buddy_df
+buddy_pairs <- buddies$buddy_pairs
+buddy_pairs
 
 # prepare data for emailing -----------------------------------------------
 
