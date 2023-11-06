@@ -15,7 +15,7 @@ buddy_form <- read_sheet(url)
 buddy_df <- buddy_form |>
   select(first_name = `First name`,
          last_name = `Last name`, 
-         email = `e-mail`,
+         email = `Email`,
          about = starts_with("About"),
          interests = contains("interest"))
 
@@ -25,6 +25,10 @@ if (nrow(buddy_df) %% 2 == 1) {
 } else {
   message("buddy_df has an even number of rows")
 }
+
+
+# deal with odd number of sign-ups ----------------------------------------
+# I can have 0, 1 or 2 buddies, depending on number of sign-ups and my capacity to take part
 
 Ella_Kaye_row <- buddy_df |> 
   filter(first_name == "Ella" & last_name == "Kaye") |> 
@@ -40,9 +44,7 @@ if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
   stop("Either filter out Ella Kaye or add a second Ella Kaye entry from a different email.")
 }
 
-# If filtering Ella Kaye out, uncomment the code below
-# If buddy_df has an odd number of rows and Ella Kaye is in buddy_df, 
-# filter out my own row (Ella Kaye)
+# If filtering Ella Kaye out, uncomment the code below:
 # if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
 #  buddy_df <- buddy_df |>
 #    filter(!(first_name == "Ella" & last_name == "Kaye"))
@@ -50,7 +52,7 @@ if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
 
 # If buddy_df has an odd number of rows and Ella Kaye is not in buddy_df, stop
 if ((nrow(buddy_df) %% 2 == 1) && !Ella_Kaye_row) {
-  stop("Either add Ella Kaye or remove a row.")
+  stop("Add Ella Kaye via the Google Form then rerun script from top.")
 }
 
 # match buddies -----------------------------------------------------------
@@ -81,6 +83,7 @@ make_buddy_pairs <- function(buddy_df, seed = 1) {
   # in buddy_pairs, create first_buddy which is the lesser of buddy1 and buddy2
   # and create second_buddy which is the greater of buddy1 and buddy2
   # then select first_buddy and second_buddy
+  # this will make it easier to compare buddy_pairs with previous_buddy_pairs later
   buddy_pairs <- buddy_pairs |>
     mutate(first_buddy = pmin(buddy1, buddy2),
            second_buddy = pmax(buddy1, buddy2)) |>
@@ -91,13 +94,13 @@ make_buddy_pairs <- function(buddy_df, seed = 1) {
               buddy_df = buddy_df))
 }
 
-# a function make_buddies that takes buddy_df, extra_buddy with default extra_buddy and seed = 1 as arguments
+# a function make_buddies that takes buddy_df, avoid = NULL and seed = 1 as arguments
 # avoid is a tibble of email pairs to avoid
-# it can be used to avoid pairing two entries for the same person (esp. Ella Kaye)
-# it can also be used if participants have specifically requested to avoid a pairing
+# it is primarily intended to be used to avoid pairing two entries for the same person (esp. Ella Kaye)
+# it can also be used if participants specifically request to avoid a pairing
 make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
   
-  # if buddy_df has an odd number of rows,
+  # sanity check if buddy_df has an odd number of rows,
   # N.B. this shouldn't happen, if the script above has run properly
   if(nrow(buddy_df) %% 2 == 1) {
     stop("buddy_df must have an even number of rows")
@@ -135,7 +138,7 @@ make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
     buddy_df <- updated_buddies$buddy_df
   }
     
-  # created updated_buddy_pairs by binding previous_buddy_pairs and buddy_pairs
+  # create updated_buddy_pairs by binding previous_buddy_pairs and buddy_pairs
   updated_buddy_pairs <- bind_rows(previous_buddy_pairs, buddy_pairs)
   # write updated_buddy_pairs to previous_buddy_pairs.csv
   write_csv(updated_buddy_pairs, "previous_buddy_pairs.csv")
@@ -182,7 +185,7 @@ write_csv(buddies_for_email, "buddies_for_email.csv")
 
 # send emails -------------------------------------------------------------
 
-# Based on example from https://thecoatlessprofessor.com/programming/r/sending-an-email-from-r-with-blastula-to-groups-of-students/
+# Adapted from example in https://thecoatlessprofessor.com/programming/r/sending-an-email-from-r-with-blastula-to-groups-of-students/
 
 buddies_email_template = function(buddies) {
   
