@@ -69,7 +69,8 @@ make_buddy_pairs <- function(buddy_df, seed = 1) {
   
   # add pairs to buddy_df
   buddy_df <- buddy_df |>
-    mutate(pair = pairs)
+    mutate(pair = pairs) |> 
+    arrange(pair)
   
   # from buddy_df create a tibble buddy_pairs with half the rows of buddy_df 
   # with a column called pair with the numbers 1 to half the number of rows in buddy_df
@@ -167,7 +168,7 @@ buddy_pairs
 
 # prepare data for emailing -----------------------------------------------
 
-buddies_for_email <- buddies |>
+buddies_for_email <- buddy_df |>
   group_by(pair) |>
   summarise(first_name1 = first_name[1],
             first_name2 = first_name[2],
