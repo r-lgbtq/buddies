@@ -4,20 +4,28 @@
 
 library(tidyverse)
 library(googlesheets4)
+library(readxl)
 library(blastula)
 library(glue)
 
 # get form data -----------------------------------------------------------
 
-url <- "https://docs.google.com/spreadsheets/d/1y74Ti54UA5nxtgMt8S-MyalOiqJHWSUOztlrr4ZUKls"
+# Will need to update URL for each round
+url <- "https://docs.google.com/spreadsheets/d/1eT_3yFdPrYOSE7a_zrtSkzWMYHGZT32AsiVToJmWY1g/edit?resourcekey#gid=1925000112"
 buddy_form <- read_sheet(url)
+
+View(buddy_form)
 
 buddy_df <- buddy_form |>
   select(first_name = `First name`,
          last_name = `Last name`, 
+         pronouns = `Pronouns`,
          email = `Email`,
          about = starts_with("About"),
-         interests = contains("interest"))
+         interests = contains("interest"),
+         times = contains("mutually"))
+
+View(buddy_df)
 
 # message is buddy_df has an odd or even number of rows
 if (nrow(buddy_df) %% 2 == 1) {
@@ -166,6 +174,7 @@ buddy_df <- buddies$buddy_df
 buddy_pairs <- buddies$buddy_pairs
 buddy_pairs
 
+
 # prepare data for emailing -----------------------------------------------
 
 buddies_for_email <- buddy_df |>
@@ -174,17 +183,26 @@ buddies_for_email <- buddy_df |>
             first_name2 = first_name[2],
             last_name1 = last_name[1],
             last_name2 = last_name[2],
+            pronouns1 = pronouns[1],
+            pronouns2 = pronouns[2],
             email1 = email[1],
             email2 = email[2],
             about1 = about[1],
             about2 = about[2],
             interests1 = interests[1],
-            interests2 = interests[2])
+            interests2 = interests[2],
+            times1 = times[1],
+            times2 = times[2])
 
-write_csv(buddies_for_email, "buddies_for_email.csv")
+View(buddies_for_email)
 
+write_csv(buddies_for_email, "buddies_for_email.csv") 
 
 # send emails -------------------------------------------------------------
+
+# test
+buddies_for_email_test <- read_csv("buddies_email_test.csv")
+View(buddies_for_email_test)
 
 # Adapted from example in https://thecoatlessprofessor.com/programming/r/sending-an-email-from-r-with-blastula-to-groups-of-students/
 
@@ -194,11 +212,17 @@ buddies_email_template = function(buddies) {
   buddies |> 
     glue_data(
       "Hello {first_name1} {last_name1} and {first_name2} {last_name2},\n\n\n\n",
-      "You are now rainbowR buddies! \n\n\n\n",
-      "**About {first_name1}**: {about1} \n\n\n\n",
-      "**About {first_name2}**: {about2} \n\n\n\n",
-      "**{first_name1}** is interested in {interests1}. \n\n\n\n",
-      "**{first_name2}** is interested in {interests2}. \n\n\n\n",
+      "You are now rainbowR 🌈👯 buddies! \n\n\n\n",
+      "Thank you both for signing up! We hope you enjoy connecting with each other. 
+      For a reminder about what the buddies scheme is and how it works,
+      see the blog post at <https://rainbowr.netlify.app/introducing-buddies>.
+      \n\n\n\n",
+      "**About {first_name1}**\n\nPronouns: {pronouns1}.\n\n\n\n{about1} \n\n\n\n",
+      "**About {first_name2}**\n\nPronouns: {pronouns2}.\n\n\n\n{about2} \n\n\n\n",
+      "**{first_name1}'s interests**\n\n{interests1} \n\n\n\n",
+      "**{first_name2}'s interests**\n\n{interests2} \n\n\n\n",
+      "**{first_name1}'s time/timezone considerations**\n\n{times1} \n\n\n\n",
+      "**{first_name2}'s time/timezone considerations**\n\n{times2} \n\n\n\n",
       "You can contact each other at [{email1}](mailto:{email1}) and [{email2}](mailto:{email2}).\n\n\n\n",
       "Over to you! \n\n\n\n"
     )  |> 
@@ -206,7 +230,28 @@ buddies_email_template = function(buddies) {
     compose_email()
 }
 
-# create and send the emails
+# test
+for (i in seq_len(nrow(buddies_for_email_test))) {
+  # Retrieve current buddies
+  buddy_pair <- buddies_for_email_test[i, ] 
+  
+  # get email addresses
+  to <- c(buddy_pair$email1, buddy_pair$email2)
+  
+  # Construct the e-mail using our custom template.
+  email_contents <- buddies_email_template(buddy_pair)
+  
+  # Send e-mail
+  email_contents %>%
+    smtp_send(
+      from = "hello@rainbowr.org",
+      to = to,
+      subject = "Your new rainbowR buddy!",
+      credentials = creds_key(id = "rainbowr")
+    )
+}
+
+# create and send the emails for real!
 for (i in seq_len(nrow(buddies_for_email))) {
   # Retrieve current buddies
   buddy_pair <- buddies_for_email[i, ] 
@@ -220,9 +265,9 @@ for (i in seq_len(nrow(buddies_for_email))) {
   # Send e-mail
   email_contents %>%
     smtp_send(
-      from = "rlgbtq@gmail.com",
+      from = "hello@rainbowr.org",
       to = to,
       subject = "Your new rainbowR buddy!",
-      credentials = creds_key(id = "gmail_rlgbtq")
+      credentials = creds_key(id = "rainbowr")
     )
 }
