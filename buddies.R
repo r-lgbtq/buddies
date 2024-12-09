@@ -11,6 +11,7 @@ library(glue)
 # get form data -----------------------------------------------------------
 
 # Will need to update URL for each round
+# !!! ONCE READ IN, IMMEDIATELY PUT BACK TO "URL" TO AVOID CHECKING ACTUAL URL INTO GITHUB !!!
 url <- "URL"
 buddy_form <- read_sheet(url)
 
@@ -21,7 +22,7 @@ buddy_df <- buddy_form |>
     first_name = `First name`,
     last_name = `Last name`,
     pronouns = `Pronouns`,
-    email = `Email`,
+    email = `Email Address`,
     about = starts_with("About"),
     interests = contains("interest"),
     times = contains("mutually")
@@ -179,7 +180,7 @@ make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
 # read in avoid.csv (N.B. in .gitignore)
 avoid <- read_csv("avoid.csv")
 
-buddies <- make_buddies(buddy_df, avoid = avoid, seed = 1)
+buddies <- make_buddies(buddy_df, avoid = avoid, seed = 2)
 buddy_df <- buddies$buddy_df
 buddy_pairs <- buddies$buddy_pairs
 buddy_pairs
