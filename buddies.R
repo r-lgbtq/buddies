@@ -283,3 +283,23 @@ for (i in seq_len(nrow(buddies_for_email))) {
       credentials = creds_key(id = "rainbowr")
     )
 }
+
+# process people to add to Slack and mailing list
+buddy_lists <- buddy_form |>
+  select(
+    first_name = `First name`,
+    last_name = `Last name`,
+    email = `Email Address`,
+    slack = contains("Slack"),
+    mailing = contains("mailing")
+  )
+
+# Add to Slack
+buddy_lists |> 
+  filter(slack == "Yes") |> 
+  pull(email) 
+
+# Send a welcome email
+buddy_lists |> 
+  filter(mailing == "Yes") |> 
+  pull(email) 
