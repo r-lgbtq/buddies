@@ -13,7 +13,6 @@ library(glue)
 # Will need to update URL for each round
 # !!! ONCE READ IN, IMMEDIATELY PUT BACK TO "URL" TO AVOID CHECKING ACTUAL URL INTO GITHUB !!!
 url <- "URL"
-buddy_form <- read_sheet(url)
 
 View(buddy_form)
 
@@ -52,7 +51,9 @@ if (!Ella_Kaye_row) {
 
 # If buddy_df has an odd number of rows and Ella Kaye is in buddy_df, stop
 if ((nrow(buddy_df) %% 2 == 1) && Ella_Kaye_row) {
-  stop("Either filter out Ella Kaye or add a second Ella Kaye entry from a different email.")
+  stop(
+    "Either filter out Ella Kaye or add a second Ella Kaye entry from a different email."
+  )
 }
 
 # If filtering Ella Kaye out, uncomment the code below:
@@ -149,7 +150,12 @@ make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
 
   # while any of the rows in buddy_pairs are in avoid_pairs
   # increment seed by 1 and run make_buddy_pairs again, updating buddy_pairs and buddy_df
-  while (any(apply(buddy_pairs, 1, function(x) paste(x, collapse = " ")) %in% apply(avoid_pairs, 1, function(x) paste(x, collapse = " ")))) {
+  while (
+    any(
+      apply(buddy_pairs, 1, function(x) paste(x, collapse = " ")) %in%
+        apply(avoid_pairs, 1, function(x) paste(x, collapse = " "))
+    )
+  ) {
     seed <- seed + 1
     updated_buddies <- make_buddy_pairs(buddy_df, seed)
     buddy_pairs <- updated_buddies$buddy_pairs
@@ -163,7 +169,10 @@ make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
 
   # write buddy_pairs to YYYY-MM_buddy_pairs.csv
   # where YYYY is the current year and MM is the current month
-  write_csv(buddy_pairs, paste0(format(Sys.Date(), "%Y-%m"), "_buddy_pairs.csv"))
+  write_csv(
+    buddy_pairs,
+    paste0(format(Sys.Date(), "%Y-%m"), "_buddy_pairs.csv")
+  )
 
   # write buddy_df to YYYY-MM_buddy_df.csv
   # where YYYY is the current year and MM is the current month
@@ -180,7 +189,7 @@ make_buddies <- function(buddy_df, avoid = NULL, seed = 1) {
 # read in avoid.csv (N.B. in .gitignore)
 avoid <- read_csv("avoid.csv")
 
-buddies <- make_buddies(buddy_df, avoid = avoid, seed = 2)
+buddies <- make_buddies(buddy_df, avoid = avoid, seed = 1)
 buddy_df <- buddies$buddy_df
 buddy_pairs <- buddies$buddy_pairs
 buddy_pairs
@@ -295,11 +304,11 @@ buddy_lists <- buddy_form |>
   )
 
 # Add to Slack
-buddy_lists |> 
-  filter(slack == "Yes") |> 
-  pull(email) 
+buddy_lists |>
+  filter(slack == "Yes") |>
+  pull(email)
 
 # Send a welcome email
-buddy_lists |> 
-  filter(mailing == "Yes") |> 
-  pull(email) 
+buddy_lists |>
+  filter(mailing == "Yes") |>
+  pull(email)
