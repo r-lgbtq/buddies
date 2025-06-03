@@ -14,6 +14,8 @@ library(glue)
 # !!! ONCE READ IN, IMMEDIATELY PUT BACK TO "URL" TO AVOID CHECKING ACTUAL URL INTO GITHUB !!!
 url <- "URL"
 
+buddy_form <- read_sheet(url)
+
 View(buddy_form)
 
 buddy_df <- buddy_form |>
