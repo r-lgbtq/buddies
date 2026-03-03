@@ -290,6 +290,7 @@ for (i in seq_len(nrow(buddies_for_email))) {
     smtp_send(
       from = "hello@rainbowr.org",
       to = to,
+      bcc = "hello@rainbowr.org",
       subject = "Your new rainbowR buddy!",
       credentials = creds_key(id = "rainbowr")
     )
