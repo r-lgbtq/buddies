@@ -12,3 +12,4 @@ assignees: ''
 - [ ] Create an image for the next buddies run
 - [ ] Update https://rainbowr.org/buddies with new image and form link
 - [ ] Update the date in the Buddies section of the rainbowR welcome email
+- [ ] Set event in calendar to run next round
